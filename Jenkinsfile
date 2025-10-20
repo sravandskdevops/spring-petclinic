@@ -1,8 +1,5 @@
 pipeline {
-    agent {
-        // Use official Maven image with Java pre-installed
-        docker { image 'maven:3.9.2-openjdk-20' }
-    }
+    agent any  // Run on any available Jenkins agent
 
     environment {
         APP_DIR = "${env.WORKSPACE}/spring-petclinic"
@@ -22,7 +19,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo "🏗️ Building the application with Maven..."
+                echo "🏗️ Building with Maven..."
                 sh '''
                 cd "$APP_DIR"
                 mvn clean package -DskipTests
