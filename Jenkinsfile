@@ -1,5 +1,8 @@
 pipeline {
-    agent any
+    agent {
+        // Use official Maven image with Java pre-installed
+        docker { image 'maven:3.9.2-openjdk-20' }
+    }
 
     environment {
         APP_DIR = "${env.WORKSPACE}/spring-petclinic"
@@ -19,7 +22,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo "🏗️ Building with Maven..."
+                echo "🏗️ Building the application with Maven..."
                 sh '''
                 cd "$APP_DIR"
                 mvn clean package -DskipTests
@@ -27,7 +30,7 @@ pipeline {
             }
         }
 
-        stage('Stop Previous Instance') {
+        stage('Stop Previous App') {
             steps {
                 echo "🛑 Stopping any process on port 9090..."
                 sh '''
@@ -48,6 +51,16 @@ pipeline {
                 nohup java -jar target/*.jar --server.port=9090 > "$APP_DIR/app.log" 2>&1 &
                 echo $! > "$APP_DIR/pid.txt"
                 echo "Application started, PID=$(cat $APP_DIR/pid.txt)"
+                '''
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                echo "🔍 Verifying application..."
+                sh '''
+                echo "Last 20 lines of log:"
+                tail -n 20 "$APP_DIR/app.log"
                 '''
             }
         }
