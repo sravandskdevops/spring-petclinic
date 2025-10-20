@@ -1,37 +1,40 @@
 pipeline {
     agent any
 
+    environment {
+        APP_DIR = "${env.WORKSPACE}/spring-petclinic"
+    }
+
     stages {
-        stage('Clone Spring PetClinic') {
+
+        stage('Checkout') {
             steps {
-                echo "Cloning Spring PetClinic..."
+                echo "📥 Cloning Spring PetClinic into workspace..."
                 sh '''
-                rm -rf /opt/spring-petclinic || true
-                cd /opt
-                git clone https://github.com/spring-projects/spring-petclinic.git
+                rm -rf "$APP_DIR"
+                git clone https://github.com/spring-projects/spring-petclinic.git "$APP_DIR"
                 '''
             }
         }
 
-        stage('Build with Maven') {
+        stage('Build') {
             steps {
-                echo "Building with Maven..."
+                echo "🏗️ Building with Maven..."
                 sh '''
-                cd /opt/spring-petclinic
+                cd "$APP_DIR"
                 mvn clean package -DskipTests
                 '''
             }
         }
 
-        stage('Stop previous app (if any)') {
+        stage('Stop Previous Instance') {
             steps {
-                echo "Stopping any process on port 9090..."
+                echo "🛑 Stopping any process on port 9090..."
                 sh '''
-                # kill process listening on 9090 (if any)
                 PID=$(lsof -ti:9090 || true)
                 if [ -n "$PID" ]; then
-                  echo "Killing PID $PID"
-                  kill -9 $PID || true
+                    echo "Killing process $PID"
+                    kill -9 $PID || true
                 fi
                 '''
             }
@@ -39,12 +42,12 @@ pipeline {
 
         stage('Run Application') {
             steps {
-                echo "Starting Spring PetClinic on port 9090..."
+                echo "🚀 Running Spring PetClinic on port 9090..."
                 sh '''
-                cd /opt/spring-petclinic
-                nohup java -jar target/*.jar --server.port=9090 > /opt/spring-petclinic/app.log 2>&1 &
-                echo $! > /opt/spring-petclinic/pid.txt
-                echo "Started, PID=$(cat /opt/spring-petclinic/pid.txt)"
+                cd "$APP_DIR"
+                nohup java -jar target/*.jar --server.port=9090 > "$APP_DIR/app.log" 2>&1 &
+                echo $! > "$APP_DIR/pid.txt"
+                echo "Application started, PID=$(cat $APP_DIR/pid.txt)"
                 '''
             }
         }
